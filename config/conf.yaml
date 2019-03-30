@@ -1,0 +1,18 @@
+Server:
+  Host: 127.0.0.1
+  Port: 80
+
+Db:
+  Pg:
+    Host: 171.244.49.164
+    Port: 5432
+    Username: postgres
+    Password: xoacdi!@#
+    DbName: spin_app
+
+  Mqtt:
+    Host: 171.244.49.164
+    Port: 1883
+    Username: 
+    Password: 
+    DbName: 
