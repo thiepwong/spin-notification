@@ -2,45 +2,43 @@ package database
 
 import (
 	"fmt"
-	"log"
-	"net/url"
+	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/thiepwong/spin-notification/common"
 )
 
+//MQTT struct
 type MQTT struct {
 	Client mqtt.Client
+	Config common.Db
 }
 
-func connect(clientId string, uri *url.URL) mqtt.Client {
-	opts := createClientOptions(clientId, uri)
-	client := mqtt.NewClient(opts)
-	token := client.Connect()
-	for !token.WaitTimeout(3 * time.Second) {
+var handleMsg mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+	
+	fmt.Printf("TOPIC: %s\n", msg.Topic())
+	fmt.Printf("MSG: %s\n", msg.Payload())
+}
+
+//CreateClient func
+func CreateClient(cf common.Db) MQTT {
+	opts := mqtt.NewClientOptions().AddBroker("ws://" + cf.Host + ":" + cf.Port).SetClientID("gotrivial")
+	opts.SetKeepAlive(2 * time.Second)
+	opts.SetDefaultPublishHandler(handleMsg)
+	opts.SetPingTimeout(1 * time.Second)
+	return MQTT{mqtt.NewClient(opts), cf}
+}
+
+//Connect func
+func (c *MQTT) Connect() {
+	if token := c.Client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
 	}
-	if err := token.Error(); err != nil {
-		log.Fatal(err)
+
+	if token := c.Client.Subscribe(c.Config.DbName, 0, handleMsg); token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
 	}
-	return client
-}
-
-func createClientOptions(clientId string, uri *url.URL) *mqtt.ClientOptions {
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(fmt.Sprintf("ws://%s", uri.Host))
-	opts.SetUsername(uri.User.Username())
-	password, _ := uri.User.Password()
-	opts.SetPassword(password)
-	opts.SetClientID(clientId)
-	return opts
-}
-
-func Listen(uri *url.URL, topic string) {
-	client := connect("sub", uri)
-	client.Subscribe(topic, 0, func(client mqtt.Client, msg mqtt.Message) {
-		fmt.Printf("* [%s] %s\n", msg.Topic(), string(msg.Payload()))
-	})
-
-	client.Publish("xinchao", 0x22, true, "xin chao nhe")
 
 }

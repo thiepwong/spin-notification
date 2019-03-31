@@ -15,4 +15,4 @@ Db:
     Port: 1883
     Username: 
     Password: 
-    DbName: 
+    DbName: parking/input
